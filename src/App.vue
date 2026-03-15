@@ -40,7 +40,14 @@ function resetUi() {
 	bgColor.value = 'bg-emerald-900'
 	stateLabel.value = 'Interval Timer'
 	timeLeft.value = 0
+	isPaused.value = false
 	timer.cancel()
+}
+
+function skipStep() {
+	while (timeLeft.value > 1 && !iterator.next().done) {}
+
+	iterator.next()
 }
 
 function *reps(seconds: number, playBeeps: boolean) {
@@ -76,9 +83,7 @@ function *oneLeg() {
 }
 
 function *finished() {
-	state.value = TimerState.Finished
-	stateLabel.value = 'Finished!'
-	bgColor.value = 'bg-zinc-900'
+	resetUi()
 	yield* reps(0, false)
 }
 
@@ -169,10 +174,18 @@ onUnmounted(() => {
 
 				<button
 					v-if="state !== TimerState.Idle && state !== TimerState.Finished"
+					@click="skipStep()"
+					class="px-8 py-4 border-2 border-white/30 text-white font-bold rounded-full hover:bg-white/10 transition-colors uppercase tracking-widest"
+				>
+					Skip
+				</button>
+
+				<button
+					v-if="state !== TimerState.Idle && state !== TimerState.Finished"
 					@click="resetUi()"
 					class="px-8 py-4 border-2 border-white/30 text-white font-bold rounded-full hover:bg-white/10 transition-colors uppercase tracking-widest"
 				>
-					Reset
+					Exit
 				</button>
 			</div>
 
