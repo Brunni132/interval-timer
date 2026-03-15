@@ -66,8 +66,9 @@ export async function loadAudio() {
   const sounds = ['prepare', 'work', 'rest', 'break', 'finished', 'second leg', 'hold'];
   for (const name of sounds) {
     try {
-      const response = await fetch(`/assets/${name}.mp3`);
-      if (!response.ok) throw new Error(`Failed to load /assets/${name}.mp3`);
+      const base = new URL('.', window.location.href).pathname
+      const response = await fetch(`${base}assets/${name}.mp3`);
+      if (!response.ok) throw new Error(`Failed to load ${base}assets/${name}.mp3`);
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       audioBuffers[name] = audioBuffer;
