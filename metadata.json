@@ -1,0 +1,5 @@
+{
+  "name": "SkyInterval Timer",
+  "description": "A high-intensity interval timer with voice prompts and color-coded screens.",
+  "requestFramePermissions": []
+}
