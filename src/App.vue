@@ -29,89 +29,108 @@ const audioBuffers = ref<Record<string, AudioBuffer>>({});
 const geminiApiKey = process.env.GEMINI_API_KEY;
 
 async function generateTTS(text: string): Promise<string | null> {
-	if (!geminiApiKey) return null;
-	try {
-		const ai = new GoogleGenAI({ apiKey: geminiApiKey });
-		const response = await ai.models.generateContent({
-			model: "gemini-2.5-flash-preview-tts",
-			contents: [{ parts: [{ text: `Say clearly: ${text}` }] }],
-			config: {
-				responseModalities: [Modality.AUDIO],
-				speechConfig: {
-					voiceConfig: {
-						prebuiltVoiceConfig: { voiceName: 'Kore' },
-					},
-				},
-			},
-		});
+  if (!geminiApiKey) return null;
+  try {
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text: `Say clearly: ${text}` }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
+          },
+        },
+      },
+    });
 
-		const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-		return base64Audio ? `data:audio/wav;base64,${base64Audio}` : null;
-	} catch (e) {
-		console.error("TTS generation failed", e);
-		return null;
-	}
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    return base64Audio ? `data:audio/wav;base64,${base64Audio}` : null;
+  } catch (e) {
+    console.error("TTS generation failed", e);
+    return null;
+  }
 }
 
 async function loadAudio() {
-	const words = ['work', 'rest', 'break', 'second leg'];
-	for (const word of words) {
-		const dataUrl = await generateTTS(word);
-		if (dataUrl) {
-			const response = await fetch(dataUrl);
-			const arrayBuffer = await response.arrayBuffer();
-			const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-			audioBuffers.value[word] = audioBuffer;
-		}
-	}
+  const words = ['work', 'rest', 'break'];
+  for (const word of words) {
+    // Try to get from cache first
+    let dataUrl = localStorage.getItem(`tts_cache_${word}`);
+
+    if (!dataUrl) {
+      // If not in cache, generate new TTS
+      dataUrl = await generateTTS(word);
+      if (dataUrl) {
+        try {
+          localStorage.setItem(`tts_cache_${word}`, dataUrl);
+        } catch (e) {
+          console.warn("localStorage quota exceeded, could not cache audio", e);
+        }
+      }
+    }
+
+    if (dataUrl) {
+      try {
+        const response = await fetch(dataUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        audioBuffers.value[word] = audioBuffer;
+      } catch (e) {
+        console.error(`Failed to decode audio for ${word}`, e);
+        // If decoding fails, the cache might be corrupted
+        localStorage.removeItem(`tts_cache_${word}`);
+      }
+    }
+  }
 }
 
 function playSound(name: string) {
-	if (audioBuffers.value[name]) {
-		const source = audioContext.createBufferSource();
-		source.buffer = audioBuffers.value[name];
-		source.connect(audioContext.destination);
+  if (audioBuffers.value[name]) {
+		var gainNode = audioContext.createGain()
+		gainNode.gain.value = 10
+		gainNode.connect(audioContext.destination)
+
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffers.value[name];
+    source.connect(gainNode);
 		source.start();
-	} else {
-		// Fallback to Web Speech API if Gemini TTS failed or is loading
-		const utterance = new SpeechSynthesisUtterance(name);
-		window.speechSynthesis.speak(utterance);
-	}
+  } else {
+    // Fallback to Web Speech API if Gemini TTS failed or is loading
+    const utterance = new SpeechSynthesisUtterance(name);
+    window.speechSynthesis.speak(utterance);
+  }
 }
 
 function playBeep(frequency = 440, duration = 0.1) {
-	const osc = audioContext.createOscillator();
-	const gain = audioContext.createGain();
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
 
-	osc.type = 'sine';
-	osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
 
-	gain.gain.setValueAtTime(0.1, audioContext.currentTime);
-	gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+  gain.gain.setValueAtTime(1, audioContext.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
 
-	osc.connect(gain);
-	gain.connect(audioContext.destination);
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
 
-	osc.start();
-	osc.stop(audioContext.currentTime + duration);
+  osc.start();
+  osc.stop(audioContext.currentTime + duration);
 }
 
 // Timer Logic
-function startOrPauseTimer() {
-	if (state.value === TimerState.Idle || state.value === TimerState.Finished) {
-		iterator = stateGenerator()
-		iterator.next()
+function startExercise(generator: Generator<any, void, unknown>) {
+	iterator = generator
+	iterator.next()
 
-		timer.planEvery(1, () => {
-			if (isPaused.value) return
+	timer.planEvery(1, () => {
+		if (isPaused.value) return
 
-			if (iterator.next().done) timer.cancel()
+		if (iterator.next().done) timer.cancel()
 
-		}, false)
-
-	} else {
-		isPaused.value = !isPaused.value;
-	}
+	}, false)
 }
 
 function resetUi() {
@@ -142,7 +161,7 @@ function *oneLeg() {
 		bgColor.value = 'bg-red-500'
 		stateLabel.value = `Work (Round ${currentRound}/${totalRounds})`
 		playSound('work')
-		yield* reps(6, true)
+		yield* reps(7, true)
 
 		if (currentRound < totalRounds) {
 			state.value = TimerState.Rest
@@ -154,11 +173,24 @@ function *oneLeg() {
 	}
 }
 
-function *stateGenerator() {
+function *generatorBreak120() {
+	state.value = TimerState.Break
+	stateLabel.value = 'Break'
+	bgColor.value = 'bg-purple-600'
+	playSound('break')
+	yield* reps(120, true)
+
+	state.value = TimerState.Finished
+	stateLabel.value = 'Finished!'
+	bgColor.value = 'bg-zinc-900'
+	yield* reps(0, false)
+}
+
+function *generatorExercise1() {
 	state.value = TimerState.Prepare
 	bgColor.value = 'bg-sky-400'
 	stateLabel.value = 'Prepare'
-	yield* reps(7, true)
+	yield* reps(2, true)
 
 	yield* oneLeg()
 
@@ -210,14 +242,29 @@ onUnmounted(() => {
 
 			<div class="pt-8 flex justify-center gap-4">
 				<button
-					@click="startOrPauseTimer"
-					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest"
-				>
-					{{ state === TimerState.Idle || state === TimerState.Finished ? 'Start Timer' : (isPaused ? 'Resume' : 'Pause') }}
+					v-if="state === TimerState.Idle || state === TimerState.Finished"
+					@click="startExercise(generatorExercise1())"
+					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest">
+					1 set, 2 legs, 8 reps, 7+3 secs
 				</button>
 
 				<button
-					v-if="state !== TimerState.Idle"
+					v-if="state === TimerState.Idle || state === TimerState.Finished"
+					@click="startExercise(generatorBreak120())"
+					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest">
+					2 min break
+				</button>
+
+				<button
+					v-if="state !== TimerState.Idle && state !== TimerState.Finished"
+					@click="isPaused = !isPaused"
+					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest"
+				>
+					{{ isPaused ? 'Resume' : 'Pause' }}
+				</button>
+
+				<button
+					v-if="state !== TimerState.Idle && state !== TimerState.Finished"
 					@click="resetUi()"
 					class="px-8 py-4 border-2 border-white/30 text-white font-bold rounded-full hover:bg-white/10 transition-colors uppercase tracking-widest"
 				>
