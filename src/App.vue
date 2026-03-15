@@ -54,7 +54,7 @@ async function generateTTS(text: string): Promise<string | null> {
 }
 
 async function loadAudio() {
-  const words = ['work', 'rest', 'break'];
+  const words = ['work', 'rest', 'break', 'prepare', 'second leg'];
   for (const word of words) {
     // Try to get from cache first
     let dataUrl = localStorage.getItem(`tts_cache_${word}`);
@@ -111,7 +111,7 @@ function playBeep(frequency = 440, duration = 0.1) {
   osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
 
   gain.gain.setValueAtTime(1, audioContext.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+  gain.gain.exponentialRampToValueAtTime(0.2, audioContext.currentTime + duration);
 
   osc.connect(gain);
   gain.connect(audioContext.destination);
@@ -173,6 +173,13 @@ function *oneLeg() {
 	}
 }
 
+function *finished() {
+	state.value = TimerState.Finished
+	stateLabel.value = 'Finished!'
+	bgColor.value = 'bg-zinc-900'
+	yield* reps(0, false)
+}
+
 function *generatorBreak120() {
 	state.value = TimerState.Break
 	stateLabel.value = 'Break'
@@ -180,17 +187,15 @@ function *generatorBreak120() {
 	playSound('break')
 	yield* reps(120, true)
 
-	state.value = TimerState.Finished
-	stateLabel.value = 'Finished!'
-	bgColor.value = 'bg-zinc-900'
-	yield* reps(0, false)
+	yield* finished()
 }
 
 function *generatorExercise1() {
 	state.value = TimerState.Prepare
 	bgColor.value = 'bg-sky-400'
 	stateLabel.value = 'Prepare'
-	yield* reps(2, true)
+	playSound('prepare')
+	yield* reps(7, true)
 
 	yield* oneLeg()
 
@@ -208,10 +213,7 @@ function *generatorExercise1() {
 	playSound('break')
 	yield* reps(120, true)
 
-	state.value = TimerState.Finished
-	stateLabel.value = 'Finished!'
-	bgColor.value = 'bg-zinc-900'
-	yield* reps(0, false)
+	yield* finished()
 }
 
 onMounted(() => {

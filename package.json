@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
+    "run-build": "cd dist && npx http-server",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "vue-tsc --noEmit"
