@@ -144,11 +144,13 @@ function *oneLeg() {
 		playSound('work')
 		yield* reps(6, true)
 
-		state.value = TimerState.Rest
-		bgColor.value = 'bg-green-500'
-		stateLabel.value = `Rest (Round ${currentRound}/${totalRounds})`
-		playSound('rest')
-		yield* reps(3, false)
+		if (currentRound < totalRounds) {
+			state.value = TimerState.Rest
+			bgColor.value = 'bg-green-500'
+			stateLabel.value = `Rest (Round ${currentRound}/${totalRounds})`
+			playSound('rest')
+			yield* reps(3, false)
+		}
 	}
 }
 
