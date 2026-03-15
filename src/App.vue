@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { GoogleGenAI, Modality } from "@google/genai";
+import { onMounted, onUnmounted, ref } from 'vue';
+import { loadAudio, playBeep, playSound } from './audio';
 import { makePeriodicTaskPlanner } from './util';
 
 // Timer states
@@ -21,104 +21,6 @@ const isPaused = ref(false)
 
 let iterator: Generator<any, void, unknown>
 const timer = makePeriodicTaskPlanner()
-
-// Audio setup
-const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-const audioBuffers = ref<Record<string, AudioBuffer>>({});
-
-const geminiApiKey = process.env.GEMINI_API_KEY;
-
-async function generateTTS(text: string): Promise<string | null> {
-  if (!geminiApiKey) return null;
-  try {
-    const ai = new GoogleGenAI({ apiKey: geminiApiKey });
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: `Say clearly: ${text}` }] }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' },
-          },
-        },
-      },
-    });
-
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    return base64Audio ? `data:audio/wav;base64,${base64Audio}` : null;
-  } catch (e) {
-    console.error("TTS generation failed", e);
-    return null;
-  }
-}
-
-async function loadAudio() {
-  const words = ['work', 'rest', 'break', 'prepare', 'second leg'];
-  for (const word of words) {
-    // Try to get from cache first
-    let dataUrl = localStorage.getItem(`tts_cache_${word}`);
-
-    if (!dataUrl) {
-      // If not in cache, generate new TTS
-      dataUrl = await generateTTS(word);
-      if (dataUrl) {
-        try {
-          localStorage.setItem(`tts_cache_${word}`, dataUrl);
-        } catch (e) {
-          console.warn("localStorage quota exceeded, could not cache audio", e);
-        }
-      }
-    }
-
-    if (dataUrl) {
-      try {
-        const response = await fetch(dataUrl);
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        audioBuffers.value[word] = audioBuffer;
-      } catch (e) {
-        console.error(`Failed to decode audio for ${word}`, e);
-        // If decoding fails, the cache might be corrupted
-        localStorage.removeItem(`tts_cache_${word}`);
-      }
-    }
-  }
-}
-
-function playSound(name: string) {
-  if (audioBuffers.value[name]) {
-		var gainNode = audioContext.createGain()
-		gainNode.gain.value = 10
-		gainNode.connect(audioContext.destination)
-
-    const source = audioContext.createBufferSource();
-    source.buffer = audioBuffers.value[name];
-    source.connect(gainNode);
-		source.start();
-  } else {
-    // Fallback to Web Speech API if Gemini TTS failed or is loading
-    const utterance = new SpeechSynthesisUtterance(name);
-    window.speechSynthesis.speak(utterance);
-  }
-}
-
-function playBeep(frequency = 440, duration = 0.1) {
-  const osc = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
-
-  gain.gain.setValueAtTime(1, audioContext.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.2, audioContext.currentTime + duration);
-
-  osc.connect(gain);
-  gain.connect(audioContext.destination);
-
-  osc.start();
-  osc.stop(audioContext.currentTime + duration);
-}
 
 // Timer Logic
 function startExercise(generator: Generator<any, void, unknown>) {
