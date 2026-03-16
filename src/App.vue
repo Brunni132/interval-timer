@@ -16,21 +16,36 @@ const bgColor = ref('')
 const stateLabel = ref('')
 const isPaused = ref(false)
 
+let exercises = ref<[string, () => Generator<number, void, unknown>][]>([])
 let iterator: Generator<any, void, unknown>
 const timer = makePeriodicTaskPlanner()
 
-// Timer Logic
+async function loadExos() {
+	const base = new URL('.', window.location.href).pathname
+	const response = await fetch(`${base}assets/exos.js`)
+	if (!response.ok) throw new Error(`Failed to load ${base}assets/exos.js`);
+
+	const text = await response.text()
+
+	const run = new Function("playBeep", "playSound", "reps", `"use strict";\n${text}`)
+	exercises.value = run(playBeep, playSound, reps)
+}
+
+function timerFunction() {
+	if (isPaused.value) return
+
+	if (iterator.next().done) {
+		resetUi()
+		timer.cancel()
+	}
+}
+
 function startExercise(generator: Generator<any, void, unknown>) {
 	state.value = TimerState.Running
 	iterator = generator
 	iterator.next()
 
-	timer.planEvery(1, () => {
-		if (isPaused.value) return
-
-		if (iterator.next().done) timer.cancel()
-
-	}, false)
+	timer.planEvery(1, timerFunction, false)
 }
 
 function resetUi() {
@@ -42,29 +57,30 @@ function resetUi() {
 	timer.cancel()
 }
 
-function finished() {
-	resetUi()
+function togglePause() {
+	isPaused.value = !isPaused.value
+
+	if (isPaused.value) {
+		timer.cancel()
+	}
+	else {
+		timer.planEvery(1, timerFunction, false)
+	}
 }
 
 function skipStep() {
 	while (timeLeft.value > 1 && !iterator.next().done) {}
 
-	iterator.next()
+	timer.planEvery(1, timerFunction, true)
 }
 
-function beepLast(seconds: number) {
-	return () => {
-		if (timeLeft.value >= 1 && timeLeft.value <= seconds) playBeep(440)
-	}
-}
-
-function *reps(seconds: number, bgCol: string, label: string, onTick?: () => void) {
+function *reps(seconds: number, bgCol: string, label: string, onTick?: (timeLeft: number, total: number) => void) {
 	bgColor.value = bgCol
 	stateLabel.value = label
 	timeLeft.value = seconds
 
 	while (timeLeft.value > 0) {
-		if (onTick) onTick()
+		if (onTick) onTick(timeLeft.value, seconds)
 
 		yield
 
@@ -72,47 +88,11 @@ function *reps(seconds: number, bgCol: string, label: string, onTick?: () => voi
 	}
 }
 
-function *oneLeg() {
-	const totalRounds = 8
-
-	for (let currentRound = 1; currentRound <= totalRounds; currentRound += 1) {
-		playSound('work')
-		yield* reps(7, 'bg-red-500', `Work (Round ${currentRound}/${totalRounds})`, beepLast(2))
-
-		if (currentRound < totalRounds) {
-			playSound('rest')
-			yield* reps(3, 'bg-green-500', `Rest (Round ${currentRound}/${totalRounds})`)
-		}
-	}
-}
-
-function *generatorBreak120() {
-	playSound('break')
-	yield* reps(120, 'bg-purple-600', 'Break', beepLast(5))
-
-	finished()
-}
-
-function *generatorExercise1() {
-	playSound('prepare')
-	yield* reps(7, 'bg-sky-400', 'Prepare', beepLast(2))
-
-	yield* oneLeg()
-
-	playSound('second leg')
-	yield* reps(5, 'bg-sky-400', 'Second leg')
-
-	yield* oneLeg()
-
-	playSound('break')
-	yield* reps(120, 'bg-purple-600', 'Break', beepLast(5))
-
-	finished()
-}
-
-onMounted(() => {
+onMounted(async () => {
 	resetUi()
 	loadAudio()
+
+	await loadExos()
 });
 
 onUnmounted(() => {
@@ -139,21 +119,15 @@ onUnmounted(() => {
 			<div class="pt-8 flex justify-center gap-4">
 				<button
 					v-if="state === TimerState.Idle || state === TimerState.Finished"
-					@click="startExercise(generatorExercise1())"
+					v-for="exo of exercises"
+					@click="startExercise(exo[1]())"
 					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest">
-					1 set, 2 legs, 8 reps, 7+3 secs
-				</button>
-
-				<button
-					v-if="state === TimerState.Idle || state === TimerState.Finished"
-					@click="startExercise(generatorBreak120())"
-					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest">
-					2 min break
+					{{ exo[0] }}
 				</button>
 
 				<button
 					v-if="state !== TimerState.Idle && state !== TimerState.Finished"
-					@click="isPaused = !isPaused"
+					@click="togglePause()"
 					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest"
 				>
 					{{ isPaused ? 'Resume' : 'Pause' }}
