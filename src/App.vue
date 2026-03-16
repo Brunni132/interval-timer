@@ -6,10 +6,7 @@ import { makePeriodicTaskPlanner } from './util';
 // Timer states
 const enum TimerState {
 	Idle,
-	Prepare,
-	Work,
-	Rest,
-	Break,
+	Running,
 	Finished,
 }
 
@@ -24,6 +21,7 @@ const timer = makePeriodicTaskPlanner()
 
 // Timer Logic
 function startExercise(generator: Generator<any, void, unknown>) {
+	state.value = TimerState.Running
 	iterator = generator
 	iterator.next()
 
@@ -44,17 +42,29 @@ function resetUi() {
 	timer.cancel()
 }
 
+function finished() {
+	resetUi()
+}
+
 function skipStep() {
 	while (timeLeft.value > 1 && !iterator.next().done) {}
 
 	iterator.next()
 }
 
-function *reps(seconds: number, playBeeps: boolean) {
+function beepLast(seconds: number) {
+	return () => {
+		if (timeLeft.value >= 1 && timeLeft.value <= seconds) playBeep(440)
+	}
+}
+
+function *reps(seconds: number, bgCol: string, label: string, onTick?: () => void) {
+	bgColor.value = bgCol
+	stateLabel.value = label
 	timeLeft.value = seconds
 
 	while (timeLeft.value > 0) {
-		if (playBeeps && timeLeft.value >= 1 && timeLeft.value <= 2) playBeep(440)
+		if (onTick) onTick()
 
 		yield
 
@@ -66,61 +76,38 @@ function *oneLeg() {
 	const totalRounds = 8
 
 	for (let currentRound = 1; currentRound <= totalRounds; currentRound += 1) {
-		state.value = TimerState.Work
-		bgColor.value = 'bg-red-500'
-		stateLabel.value = `Work (Round ${currentRound}/${totalRounds})`
 		playSound('work')
-		yield* reps(7, true)
+		yield* reps(7, 'bg-red-500', `Work (Round ${currentRound}/${totalRounds})`, beepLast(2))
 
 		if (currentRound < totalRounds) {
-			state.value = TimerState.Rest
-			bgColor.value = 'bg-green-500'
-			stateLabel.value = `Rest (Round ${currentRound}/${totalRounds})`
 			playSound('rest')
-			yield* reps(3, false)
+			yield* reps(3, 'bg-green-500', `Rest (Round ${currentRound}/${totalRounds})`)
 		}
 	}
 }
 
-function *finished() {
-	resetUi()
-	yield* reps(0, false)
-}
-
 function *generatorBreak120() {
-	state.value = TimerState.Break
-	stateLabel.value = 'Break'
-	bgColor.value = 'bg-purple-600'
 	playSound('break')
-	yield* reps(120, true)
+	yield* reps(120, 'bg-purple-600', 'Break', beepLast(5))
 
-	yield* finished()
+	finished()
 }
 
 function *generatorExercise1() {
-	state.value = TimerState.Prepare
-	bgColor.value = 'bg-sky-400'
-	stateLabel.value = 'Prepare'
 	playSound('prepare')
-	yield* reps(7, true)
+	yield* reps(7, 'bg-sky-400', 'Prepare', beepLast(2))
 
 	yield* oneLeg()
 
-	state.value = TimerState.Prepare
-	bgColor.value = 'bg-sky-400'
-	stateLabel.value = 'Second leg'
 	playSound('second leg')
-	yield* reps(5, false)
+	yield* reps(5, 'bg-sky-400', 'Second leg')
 
 	yield* oneLeg()
 
-	state.value = TimerState.Break
-	stateLabel.value = 'Break'
-	bgColor.value = 'bg-purple-600'
 	playSound('break')
-	yield* reps(120, true)
+	yield* reps(120, 'bg-purple-600', 'Break', beepLast(5))
 
-	yield* finished()
+	finished()
 }
 
 onMounted(() => {
@@ -134,7 +121,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-	<div :class="['min-h-screen flex flex-col items-center justify-center transition-colors duration-500 text-white p-8', bgColor]">
+	<div :class="['min-h-screen flex flex-col items-center justify-center transition-colors duration-500 text-white p-0', bgColor]">
 		<div class="max-w-md w-full text-center space-y-8">
 			<h1 class="text-4xl font-bold tracking-tight uppercase opacity-80">
 				{{ stateLabel }}
@@ -185,7 +172,7 @@ onUnmounted(() => {
 					@click="resetUi()"
 					class="px-8 py-4 border-2 border-white/30 text-white font-bold rounded-full hover:bg-white/10 transition-colors uppercase tracking-widest"
 				>
-					Exit
+					Stop
 				</button>
 			</div>
 
