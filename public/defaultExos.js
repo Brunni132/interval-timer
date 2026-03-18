@@ -1,6 +1,7 @@
 function beepLast(seconds) {
 	return (timeLeft, total) => {
-		if (timeLeft >= 1 && timeLeft <= seconds) playBeep(440);
+		// if (timeLeft >= 1 && timeLeft <= seconds) playBeep(440);
+		if (timeLeft >= 1 && timeLeft <= seconds) playSound(String(timeLeft));
 	};
 }
 
@@ -25,7 +26,7 @@ return [
 
 		yield* oneLeg(8, 7, 3);
 
-		yield* sayAndReps('second leg', 5, 'bg-sky-400', 'Second leg');
+		yield* sayAndReps('second leg', 5, 'bg-sky-400', 'Second leg', beepLast(2));
 
 		yield* oneLeg(8, 7, 3);
 

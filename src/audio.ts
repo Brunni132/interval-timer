@@ -63,7 +63,7 @@ const audioBuffers = {} as Record<string, AudioBuffer>
 // }
 
 export async function loadAudio() {
-  const sounds = ['prepare', 'work', 'rest', 'break', 'finished', 'second leg', 'hold'];
+  const sounds = ['prepare', 'work', 'rest', 'break', 'finished', 'second leg', 'hold', '5', '4', '3', '2', '1'];
   for (const name of sounds) {
     try {
       const base = new URL('.', window.location.href).pathname

@@ -2,6 +2,8 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import { loadAudio, playBeep, playSound } from './audio';
 import { makePeriodicTaskPlanner } from './util';
+import { fetchExos } from './exos';
+import Settings from './views/Settings.vue';
 
 // Timer states
 const enum TimerState {
@@ -20,15 +22,20 @@ let exercises = ref<[string, () => Generator<number, void, unknown>][]>([])
 let iterator: Generator<any, void, unknown>
 const timer = makePeriodicTaskPlanner()
 
+const settingsOpen = ref(false)
+
 async function loadExos() {
-	const base = new URL('.', window.location.href).pathname
-	const response = await fetch(`${base}assets/exos.js`)
-	if (!response.ok) throw new Error(`Failed to load ${base}assets/exos.js`);
+	const code = await fetchExos()
 
-	const text = await response.text()
-
-	const run = new Function("playBeep", "playSound", "reps", `"use strict";\n${text}`)
-	exercises.value = run(playBeep, playSound, reps)
+	try {
+		const run = new Function("playBeep", "playSound", "reps", `"use strict";\n${code}`)
+		exercises.value = run(playBeep, playSound, reps)
+	}
+	catch (e: unknown) {
+		console.error(e)
+		alert(`The code cannot be compiled ${e}`)
+		settingsOpen.value = true
+	}
 }
 
 function timerFunction() {
@@ -101,24 +108,24 @@ onUnmounted(() => {
 </script>
 
 <template>
-	<div :class="['min-h-screen flex flex-col items-center justify-center transition-colors duration-500 text-white p-0', bgColor]">
+	<Settings v-if="settingsOpen" @update="loadExos" @close="settingsOpen = false" />
+	<div v-else :class="['min-h-screen flex flex-col items-center justify-center transition-colors duration-500 text-white p-0', bgColor]">
 		<div class="max-w-md w-full text-center space-y-8">
 			<h1 class="text-4xl font-bold tracking-tight uppercase opacity-80">
 				{{ stateLabel }}
 			</h1>
 
-			<div class="relative">
+			<div class="relative" v-if="state !== TimerState.Idle && state !== TimerState.Finished">
 				<div class="text-[12rem] font-black leading-none tabular-nums drop-shadow-2xl">
 					{{ timeLeft }}
 				</div>
-				<div v-if="state !== TimerState.Idle && state !== TimerState.Finished" class="text-xl font-medium opacity-60">
+				<div class="text-xl font-medium opacity-60">
 					seconds remaining
 				</div>
 			</div>
 
-			<div class="pt-8 flex justify-center gap-4">
+			<div v-if="state === TimerState.Idle || state === TimerState.Finished" class="pt-8 flex flex-col items-center gap-4">
 				<button
-					v-if="state === TimerState.Idle || state === TimerState.Finished"
 					v-for="exo of exercises"
 					@click="startExercise(exo[1]())"
 					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest">
@@ -126,7 +133,14 @@ onUnmounted(() => {
 				</button>
 
 				<button
-					v-if="state !== TimerState.Idle && state !== TimerState.Finished"
+					@click="settingsOpen = true"
+					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest">
+					Customize…
+				</button>
+			</div>
+
+			<div v-else class="pt-8 flex justify-center gap-4">
+				<button
 					@click="togglePause()"
 					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest"
 				>
@@ -134,7 +148,6 @@ onUnmounted(() => {
 				</button>
 
 				<button
-					v-if="state !== TimerState.Idle && state !== TimerState.Finished"
 					@click="skipStep()"
 					class="px-8 py-4 border-2 border-white/30 text-white font-bold rounded-full hover:bg-white/10 transition-colors uppercase tracking-widest"
 				>
@@ -142,7 +155,6 @@ onUnmounted(() => {
 				</button>
 
 				<button
-					v-if="state !== TimerState.Idle && state !== TimerState.Finished"
 					@click="resetUi()"
 					class="px-8 py-4 border-2 border-white/30 text-white font-bold rounded-full hover:bg-white/10 transition-colors uppercase tracking-widest"
 				>
