@@ -86,6 +86,8 @@ function togglePause() {
 function skipStep() {
 	while (timeLeft.value > 1 && !iterator.next().done) {}
 
+	lastTick.value = timeInSeconds() - 1
+
 	timer.planEvery(1, timerFunction, true)
 }
 
