@@ -4,7 +4,7 @@ import { Codemirror } from 'vue-codemirror'
 import { javascript } from '@codemirror/lang-javascript'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { fetchExos, updateExos } from '../exos'
-import { getVolume, updateVolume } from '../audio';
+import { getVolume, playSound, updateVolume } from '../audio';
 
 const exosText = ref('')
 const configError = ref<string | null>(null);
@@ -36,7 +36,7 @@ onMounted(async () => {
 		<h1 class="text-4xl font-bold tracking-tight uppercase opacity-80">Settings</h1>
 		<button
 			@click="emit('close')"
-			class="px-4 py-4 bg-zinc-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
+			class="px-8 py-4 bg-zinc-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
 			Back to timer
 		</button>
 	  </div>
@@ -51,7 +51,7 @@ onMounted(async () => {
 				max="1"
 				step="0.05"
 				class="mx-4 w-full accent-blue-600"
-				@change="updateVolume(volume)" />
+				@change="updateVolume(volume); playSound('work')" />
 			<span>{{ Math.round(volume * 100) }}%</span>
 		</div>
 
@@ -83,13 +83,13 @@ onMounted(async () => {
 		<span>
 			<button
 				@click="saveConfig"
-				class="mx-1 px-4 py-4 bg-blue-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
+				class="mx-1 px-8 py-4 bg-blue-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
 				Save code
 			</button>
 
 			<button
 				@click="emit('close')"
-				class="mx-1 px-4 py-4 bg-zinc-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
+				class="mx-1 px-8 py-4 bg-zinc-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
 				Cancel
 			</button>
 		</span>

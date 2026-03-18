@@ -3,7 +3,9 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import { loadAudio, playBeep, playSound } from './audio';
 import { makePeriodicTaskPlanner, timeInSeconds } from './util';
 import { fetchExos } from './exos';
+import { Settings as SettingsIcon } from 'lucide-vue-next'
 import Settings from './views/Settings.vue';
+
 
 // Timer states
 const enum TimerState {
@@ -30,6 +32,7 @@ async function loadExos() {
 
 	try {
 		const run = new Function("playBeep", "playSound", "reps", `"use strict";\n${code}`)
+		resetUi()
 		exercises.value = run(playBeep, playSound, reps)
 	}
 	catch (e: unknown) {
@@ -104,14 +107,27 @@ function *reps(seconds: number, bgCol: string, label: string, onTick?: (timeLeft
 	}
 }
 
-onMounted(async () => {
-	resetUi()
-	loadAudio()
+function onKeyDown(e: KeyboardEvent) {
+	if (settingsOpen.value) return
 
+	if (e.code === 'Space') {
+		e.preventDefault()
+
+		if (state.value !== TimerState.Idle && state.value !== TimerState.Finished) {
+			togglePause()
+		}
+	}
+}
+
+onMounted(async () => {
 	await loadExos()
+	await loadAudio()
+
+	window.addEventListener('keydown', onKeyDown)
 });
 
 onUnmounted(() => {
+	window.removeEventListener('keydown', onKeyDown)
 	timer.cancel()
 });
 </script>
@@ -120,9 +136,18 @@ onUnmounted(() => {
 	<Settings v-if="settingsOpen" @update="loadExos" @close="settingsOpen = false" />
 	<div v-else :class="['min-h-screen flex flex-col items-center justify-center transition-colors duration-500 text-white p-0', bgColor]">
 		<div class="max-w-md w-full text-center space-y-8">
-			<h1 class="text-4xl font-bold tracking-tight uppercase opacity-80">
-				{{ stateLabel }}
-			</h1>
+			<div class="relative w-full">
+				<h1 class="text-4xl font-bold tracking-tight uppercase opacity-80">
+					{{ stateLabel }}
+				</h1>
+
+				<button
+					type="button"
+					class="absolute right-0 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/30 hover:bg-white/10 text-white active:scale-95 transition"
+					@click="settingsOpen = true; isPaused = true">
+					<SettingsIcon class="h-5 w-5" />
+				</button>
+			</div>
 
 			<div class="relative" v-if="state !== TimerState.Idle && state !== TimerState.Finished">
 				<div class="text-[12rem] font-black leading-none tabular-nums drop-shadow-2xl">
@@ -141,11 +166,11 @@ onUnmounted(() => {
 					{{ exo[0] }}
 				</button>
 
-				<button
+				<!-- <button
 					@click="settingsOpen = true"
 					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest">
 					Customize…
-				</button>
+				</button> -->
 			</div>
 
 			<div v-else class="pt-8 flex justify-center gap-4">
