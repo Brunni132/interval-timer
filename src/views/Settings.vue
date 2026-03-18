@@ -4,9 +4,11 @@ import { Codemirror } from 'vue-codemirror'
 import { javascript } from '@codemirror/lang-javascript'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { fetchExos, updateExos } from '../exos'
+import { getVolume, updateVolume } from '../audio';
 
 const exosText = ref('')
 const configError = ref<string | null>(null);
+const volume = ref(1)
 
 const extensions = [javascript(), oneDark]
 
@@ -23,6 +25,7 @@ function saveConfig() {
 
 onMounted(async () => {
   exosText.value = await fetchExos()
+  volume.value = getVolume()
 })
 </script>
 
@@ -31,27 +34,31 @@ onMounted(async () => {
 	<div class="max-w-2xl w-full space-y-8">
 	  <div class="flex items-center justify-between">
 		<h1 class="text-4xl font-bold tracking-tight uppercase opacity-80">Settings</h1>
-
-		<span>
-			<button
-				@click="saveConfig"
-				class="mx-2 px-8 py-4 bg-blue-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
-				Save
-			</button>
-
-			<button
-				@click="emit('close')"
-				class="mx-2 px-8 py-4 bg-zinc-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
-				Cancel
-			</button>
-		</span>
+		<button
+			@click="emit('close')"
+			class="px-4 py-4 bg-zinc-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
+			Back to timer
+		</button>
 	  </div>
 
 	  <div class="text-left space-y-4">
+		<div class="flex">
+			<span>Volume</span>
+			<input
+				type="range"
+				v-model.number="volume"
+				min="0"
+				max="1"
+				step="0.05"
+				class="mx-4 w-full accent-blue-600"
+				@change="updateVolume(volume)" />
+			<span>{{ Math.round(volume * 100) }}%</span>
+		</div>
+
 		<p class="text-sm text-white/60">Modify the exercise configuration below. Changes are saved to local storage.</p>
 
 		<div class="relative group">
-		  <div class="absolute -inset-1 bg-gradient-to-r from-sky-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+		  <!-- <div class="absolute -inset-1 bg-gradient-to-r from-sky-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div> -->
 		  <div class="relative bg-zinc-950 border border-white/10 rounded-xl overflow-hidden shadow-2xl">
 			<codemirror
 			  v-model="exosText"
@@ -70,6 +77,22 @@ onMounted(async () => {
 			{{ configError }}
 		  </div>
 		</div>
+	  </div>
+
+	  <div class="flex flex-1 justify-end">
+		<span>
+			<button
+				@click="saveConfig"
+				class="mx-1 px-4 py-4 bg-blue-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
+				Save code
+			</button>
+
+			<button
+				@click="emit('close')"
+				class="mx-1 px-4 py-4 bg-zinc-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
+				Cancel
+			</button>
+		</span>
 	  </div>
 
 	  <!-- <div class="bg-white/5 rounded-xl p-6 text-sm text-white/40 space-y-2">

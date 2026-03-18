@@ -17,7 +17,7 @@ const timeLeft = ref(0)
 const bgColor = ref('')
 const stateLabel = ref('')
 const isPaused = ref(false)
-const lastTick = ref(timeInSeconds())
+let lastTick = 0
 
 let exercises = ref<[string, () => Generator<number, void, unknown>][]>([])
 let iterator: Generator<any, void, unknown>
@@ -42,8 +42,8 @@ async function loadExos() {
 function timerFunction() {
 	if (isPaused.value) return
 
-	while (Math.floor(timeInSeconds() - lastTick.value) >= 1) {
-		lastTick.value += 1
+	while (Math.floor(timeInSeconds() - lastTick) >= 1) {
+		lastTick += 1
 
 		if (iterator.next().done) {
 			resetUi()
@@ -58,8 +58,7 @@ function startExercise(generator: Generator<any, void, unknown>) {
 	iterator = generator
 	iterator.next()
 
-	lastTick.value = timeInSeconds()
-
+	lastTick = timeInSeconds()
 	timer.planEvery(1, timerFunction, false)
 }
 
@@ -79,6 +78,7 @@ function togglePause() {
 		timer.cancel()
 	}
 	else {
+		lastTick = timeInSeconds()
 		timer.planEvery(1, timerFunction, false)
 	}
 }
@@ -86,8 +86,7 @@ function togglePause() {
 function skipStep() {
 	while (timeLeft.value > 1 && !iterator.next().done) {}
 
-	lastTick.value = timeInSeconds() - 1
-
+	lastTick = timeInSeconds() - 1
 	timer.planEvery(1, timerFunction, true)
 }
 

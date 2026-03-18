@@ -62,6 +62,15 @@ const audioBuffers = {} as Record<string, AudioBuffer>
 //   }
 // }
 
+export function getVolume() {
+	return Number(localStorage.getItem('volume') ?? 1)
+}
+
+function getVolumeGain() {
+  const dB = -40 + getVolume() * 40
+  return Math.pow(10, dB / 20)
+}
+
 export async function loadAudio() {
   const sounds = ['prepare', 'work', 'rest', 'break', 'finished', 'second leg', 'hold', '5', '4', '3', '2', '1'];
   for (const name of sounds) {
@@ -81,7 +90,7 @@ export async function loadAudio() {
 export function playSound(name: string) {
   if (audioBuffers[name]) {
 		var gainNode = audioContext.createGain()
-		gainNode.gain.value = 2
+		gainNode.gain.value = getVolumeGain()
 		gainNode.connect(audioContext.destination)
 
     const source = audioContext.createBufferSource();
@@ -96,18 +105,23 @@ export function playSound(name: string) {
 }
 
 export function playBeep(frequency = 440, duration = 0.1) {
+  const vol = getVolumeGain()
   const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();
 
   osc.type = 'sine';
   osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
 
-  gain.gain.setValueAtTime(1, audioContext.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.2, audioContext.currentTime + duration);
+  gain.gain.setValueAtTime(vol, audioContext.currentTime);
+  gain.gain.exponentialRampToValueAtTime(vol * 0.2, audioContext.currentTime + duration);
 
   osc.connect(gain);
   gain.connect(audioContext.destination);
 
   osc.start();
   osc.stop(audioContext.currentTime + duration);
+}
+
+export function updateVolume(vol: number) {
+  localStorage.setItem('volume', String(vol))
 }
