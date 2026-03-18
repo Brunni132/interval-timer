@@ -42,7 +42,7 @@ onMounted(async () => {
 			<button
 				@click="emit('close')"
 				class="mx-2 px-8 py-4 bg-zinc-700 text-sm text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase">
-			Cancel
+				Cancel
 			</button>
 		</span>
 	  </div>
@@ -57,7 +57,7 @@ onMounted(async () => {
 			  v-model="exosText"
 			  placeholder="Code goes here..."
 			  :style="{ height: '320px' }"
-			  :autofocus="true"
+			  :autofocus="false"
 			  :indent-with-tab="true"
 			  :tab-size="2"
 			  :extensions="extensions"

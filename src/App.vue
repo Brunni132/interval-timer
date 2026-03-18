@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
 import { loadAudio, playBeep, playSound } from './audio';
-import { makePeriodicTaskPlanner } from './util';
+import { makePeriodicTaskPlanner, timeInSeconds } from './util';
 import { fetchExos } from './exos';
 import Settings from './views/Settings.vue';
 
@@ -17,6 +17,7 @@ const timeLeft = ref(0)
 const bgColor = ref('')
 const stateLabel = ref('')
 const isPaused = ref(false)
+const lastTick = ref(timeInSeconds())
 
 let exercises = ref<[string, () => Generator<number, void, unknown>][]>([])
 let iterator: Generator<any, void, unknown>
@@ -41,9 +42,14 @@ async function loadExos() {
 function timerFunction() {
 	if (isPaused.value) return
 
-	if (iterator.next().done) {
-		resetUi()
-		timer.cancel()
+	while (Math.floor(timeInSeconds() - lastTick.value) >= 1) {
+		lastTick.value += 1
+
+		if (iterator.next().done) {
+			resetUi()
+			timer.cancel()
+			return
+		}
 	}
 }
 
@@ -51,6 +57,8 @@ function startExercise(generator: Generator<any, void, unknown>) {
 	state.value = TimerState.Running
 	iterator = generator
 	iterator.next()
+
+	lastTick.value = timeInSeconds()
 
 	timer.planEvery(1, timerFunction, false)
 }
