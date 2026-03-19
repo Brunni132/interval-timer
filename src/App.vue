@@ -19,7 +19,7 @@ const timeLeft = ref(0)
 const bgColor = ref('')
 const stateLabel = ref('')
 const isPaused = ref(false)
-let lastTick = 0
+let nextExpectedTick = 0
 
 let exercises = ref<[string, () => Generator<number, void, unknown>][]>([])
 let iterator: Generator<any, void, unknown>
@@ -45,24 +45,24 @@ async function loadExos() {
 function timerFunction() {
 	if (isPaused.value) return
 
-	while (Math.floor(timeInSeconds() - lastTick) >= 1) {
-		lastTick += 1
+	while (timeInSeconds() - nextExpectedTick >= 0) {
+		nextExpectedTick += 1
 
 		if (iterator.next().done) {
 			resetUi()
-			timer.cancel()
-			return
+			break
 		}
 	}
 }
 
 function startExercise(generator: Generator<any, void, unknown>) {
+	resetUi()
+
 	state.value = TimerState.Running
 	iterator = generator
-	iterator.next()
 
-	lastTick = timeInSeconds()
-	timer.planEvery(1, timerFunction, false)
+	nextExpectedTick = timeInSeconds()
+	timer.planEvery(1, timerFunction, true)
 }
 
 function resetUi() {
@@ -81,7 +81,7 @@ function togglePause() {
 		timer.cancel()
 	}
 	else {
-		lastTick = timeInSeconds()
+		nextExpectedTick = timeInSeconds() + 1
 		timer.planEvery(1, timerFunction, false)
 	}
 }
@@ -89,8 +89,13 @@ function togglePause() {
 function skipStep() {
 	while (timeLeft.value > 1 && !iterator.next().done) {}
 
-	lastTick = timeInSeconds() - 1
-	timer.planEvery(1, timerFunction, true)
+	if (iterator.next().done) {
+		resetUi()
+	}
+	else {
+		nextExpectedTick = timeInSeconds() + 1
+		timer.planEvery(1, timerFunction, false)
+	}
 }
 
 function *reps(seconds: number, bgCol: string, label: string, onTick?: (timeLeft: number, total: number) => void) {
