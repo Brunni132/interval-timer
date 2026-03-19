@@ -28,7 +28,7 @@ return [
 				yield* reps(3, 'bg-green-500', `Rest ${set}/10`)
 			}
 		}
-	},
+	}],
 	['1 min break', function*() {
 		playSound('break')
 		yield* reps('break', 60, 'bg-purple-500', 'Break', remaining => {
@@ -39,7 +39,7 @@ return [
 			}
 		})
 	}],
-];
+]
 ```
 
 # Notes :
