@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { loadAudio, playBeep, playSound } from './audio';
 import { makePeriodicTaskPlanner, timeInSeconds } from './util';
 import { fetchExos } from './exos';
 import { Settings as SettingsIcon } from 'lucide-vue-next'
 import Settings from './views/Settings.vue';
+import { acquireWakeLock, releaseWakeLock } from './wakelock';
 
 
 // Timer states
@@ -18,7 +19,8 @@ const state = ref<TimerState>(TimerState.Idle)
 const timeLeft = ref(0)
 const bgColor = ref('')
 const stateLabel = ref('')
-const isPaused = ref(false)
+const _isPaused = ref(true)
+
 let nextExpectedTick = 0
 
 let exercises = ref<[string, () => Generator<number, void, unknown>][]>([])
@@ -42,9 +44,26 @@ async function loadExos() {
 	}
 }
 
-function timerFunction() {
-	if (isPaused.value) return
+const isPaused = computed({
+	get() { return _isPaused.value },
+	async set(paused: boolean) {
+		if (_isPaused.value === paused) return
 
+		_isPaused.value = paused
+
+		if (paused) {
+			timer.cancel()
+			await releaseWakeLock()
+		}
+		else {
+			nextExpectedTick = timeInSeconds() + 1
+			timer.planEvery(1, timerFunction, false)
+			await acquireWakeLock()
+		}
+	}
+})
+
+function timerFunction() {
 	while (timeInSeconds() - nextExpectedTick >= 0) {
 		nextExpectedTick += 1
 
@@ -55,44 +74,30 @@ function timerFunction() {
 	}
 }
 
-function startExercise(generator: Generator<any, void, unknown>) {
-	resetUi()
+async function startExercise(generator: Generator<any, void, unknown>) {
+	await resetUi()
 
 	state.value = TimerState.Running
 	iterator = generator
-
-	nextExpectedTick = timeInSeconds()
-	timer.planEvery(1, timerFunction, true)
+	iterator.next()
+	isPaused.value = false
 }
 
-function resetUi() {
+async function resetUi() {
 	state.value = TimerState.Idle
 	bgColor.value = 'bg-emerald-900'
 	stateLabel.value = 'Interval Timer'
 	timeLeft.value = 0
-	isPaused.value = false
-	timer.cancel()
+	isPaused.value = true
 }
 
-function togglePause() {
-	isPaused.value = !isPaused.value
-
-	if (isPaused.value) {
-		timer.cancel()
-	}
-	else {
-		nextExpectedTick = timeInSeconds() + 1
-		timer.planEvery(1, timerFunction, false)
-	}
-}
-
-function skipStep() {
+async function skipStep() {
 	while (timeLeft.value > 1 && !iterator.next().done) {}
 
 	if (iterator.next().done) {
-		resetUi()
+		await resetUi()
 	}
-	else {
+	else if (!isPaused.value) {
 		nextExpectedTick = timeInSeconds() + 1
 		timer.planEvery(1, timerFunction, false)
 	}
@@ -119,7 +124,7 @@ function onKeyDown(e: KeyboardEvent) {
 		e.preventDefault()
 
 		if (state.value !== TimerState.Idle && state.value !== TimerState.Finished) {
-			togglePause()
+			isPaused.value = !isPaused.value
 		}
 	}
 }
@@ -131,9 +136,9 @@ onMounted(async () => {
 	window.addEventListener('keydown', onKeyDown)
 });
 
-onUnmounted(() => {
+onUnmounted(async () => {
 	window.removeEventListener('keydown', onKeyDown)
-	timer.cancel()
+	isPaused.value = true
 });
 </script>
 
@@ -180,7 +185,7 @@ onUnmounted(() => {
 
 			<div v-else class="pt-8 flex justify-center gap-4">
 				<button
-					@click="togglePause()"
+					@click="isPaused = !isPaused"
 					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest"
 				>
 					{{ isPaused ? 'Resume' : 'Pause' }}
