@@ -63,15 +63,28 @@ const isPaused = computed({
 	}
 })
 
-function timerFunction() {
-	while (timeInSeconds() - nextExpectedTick >= 0) {
-		nextExpectedTick += 1
-
-		if (iterator.next().done) {
-			resetUi()
-			break
-		}
+function advanceOneSecond() {
+	const programFinished = iterator.next().done
+	if (programFinished) {
+		resetUi()
 	}
+	return programFinished
+}
+
+function timerFunction() {
+	// Late?
+	while (timeInSeconds() - nextExpectedTick > 1) {
+		nextExpectedTick += 1
+		if (advanceOneSecond()) return
+	}
+
+	// Early?
+	if (timeInSeconds() - nextExpectedTick < -1) {
+		return
+	}
+
+	nextExpectedTick += 1
+	advanceOneSecond()
 }
 
 async function startExercise(generator: Generator<any, void, unknown>) {
@@ -92,12 +105,12 @@ async function resetUi() {
 }
 
 async function skipStep() {
-	while (timeLeft.value > 1 && !iterator.next().done) {}
-
-	if (iterator.next().done) {
-		await resetUi()
+	while (timeLeft.value > 1) {
+		if (advanceOneSecond()) return
 	}
-	else if (!isPaused.value) {
+
+	// Advance last second
+	if (!advanceOneSecond() && !isPaused.value) {
 		nextExpectedTick = timeInSeconds() + 1
 		timer.planEvery(1, timerFunction, false)
 	}
