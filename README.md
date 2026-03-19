@@ -4,9 +4,9 @@ Try it at http://mobile-dev.ch/products/interval-timer
 
 It uses a DSL allowing you to write your own exercise. You need to return an array of `['exercise name', function]`.
 
-The available API functions are `playBeep(frequency)` and `say('text')`.
+The available API functions are `beep(frequency)` and `say('text')`.
 
-There is also `yield* reps(numberOfSeconds, backgroundColor, label, onTick)`, which can be used to start a section.
+There is also `yield* hold(numberOfSeconds, backgroundColor, label, onTick)`, which can be used to start a section.
 The `onTick` argument is an optional JS function that takes the current remaining time and the total number of seconds
 passed to the reps section.
 
@@ -18,24 +18,24 @@ return [
 	['2 rounds, 10 reps 7+3 secs', function*() {
 		for (let round = 1; round <= 2; round++) {
 			say('prepare')
-			yield* reps(10, 'bg-blue-500', `Prepare (Round ${currentRound}/2)`)
+			yield* hold(10, 'blue-500', `Prepare (Round ${currentRound}/2)`)
 
 			for (let set = 1; set <= 10; set++) {
 				say('work')
-				yield* reps(7, 'bg-red-500', `Work ${set}/10`)
+				yield* hold(7, 'red-500', `Work ${set}/10`)
 
 				say('rest')
-				yield* reps(3, 'bg-green-500', `Rest ${set}/10`)
+				yield* hold(3, 'green-500', `Rest ${set}/10`)
 			}
 		}
 	}],
 	['1 min break', function*() {
 		say('break')
-		yield* reps('break', 60, 'bg-purple-500', 'Break', remaining => {
+		yield* hold(60, 'purple-500', 'Break', remaining => {
 			if (remaining === 1) {
-				playBeep(880)
+				beep(880)
 			} else if (remaining <= 5) {
-				playBeep(440)
+				beep(440)
 			}
 		})
 	}],

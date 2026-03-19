@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { loadAudio, playBeep, say } from './audio';
+import { loadAudio, beep, say } from './audio';
 import { makePeriodicTaskPlanner, timeInSeconds } from './util';
 import { fetchExos } from './exos';
 import { Settings as SettingsIcon } from 'lucide-vue-next'
@@ -33,9 +33,9 @@ async function loadExos() {
 	const code = await fetchExos()
 
 	try {
-		const run = new Function("playBeep", "say", "reps", `"use strict";\n${code}`)
+		const run = new Function("beep", "say", "hold", `"use strict";\n${code}`)
 		resetUi()
-		exercises.value = run(playBeep, say, reps)
+		exercises.value = run(beep, say, hold)
 	}
 	catch (e: unknown) {
 		console.error(e)
@@ -116,7 +116,7 @@ async function skipStep() {
 	}
 }
 
-function *reps(seconds: number, bgCol: string, label: string, onTick?: (timeLeft: number, total: number) => void) {
+function *hold(seconds: number, bgCol: string, label: string, onTick?: (timeLeft: number, total: number) => void) {
 	bgColor.value = bgCol
 	stateLabel.value = label
 	timeLeft.value = seconds

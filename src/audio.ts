@@ -104,7 +104,7 @@ export function say(name: string) {
   }
 }
 
-export function playBeep(frequency = 440, duration = 0.1) {
+export function beep(frequency = 440, duration = 0.1) {
   const vol = getVolumeGain()
   const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();
