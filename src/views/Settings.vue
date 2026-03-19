@@ -4,7 +4,7 @@ import { Codemirror } from 'vue-codemirror'
 import { javascript } from '@codemirror/lang-javascript'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { fetchExos, updateExos } from '../exos'
-import { getVolume, playSound, updateVolume } from '../audio';
+import { getVolume, say, updateVolume } from '../audio';
 
 const exosText = ref('')
 const configError = ref<string | null>(null);
@@ -51,7 +51,7 @@ onMounted(async () => {
 				max="1.5"
 				step="0.05"
 				class="mx-4 w-full accent-blue-600"
-				@change="updateVolume(volume); playSound('work')" />
+				@change="updateVolume(volume); say('work')" />
 			<span>{{ Math.round(volume * 100) }}%</span>
 		</div>
 

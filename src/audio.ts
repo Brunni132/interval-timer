@@ -87,7 +87,7 @@ export async function loadAudio() {
   }
 }
 
-export function playSound(name: string) {
+export function say(name: string) {
   if (audioBuffers[name]) {
 		var gainNode = audioContext.createGain()
 		gainNode.gain.value = getVolumeGain()

@@ -1,12 +1,12 @@
 function beepLast(seconds) {
 	return (timeLeft, total) => {
 		// if (timeLeft >= 1 && timeLeft <= seconds) playBeep(440);
-		if (timeLeft >= 1 && timeLeft <= seconds) playSound(String(timeLeft));
+		if (timeLeft >= 1 && timeLeft <= seconds) say(String(timeLeft));
 	};
 }
 
 function* sayAndReps(soundName, seconds, bgCol, label, onTick) {
-	playSound(soundName)
+	say(soundName)
 	yield* reps(seconds, bgCol, label, onTick)
 }
 

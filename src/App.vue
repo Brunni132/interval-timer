@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { loadAudio, playBeep, playSound } from './audio';
+import { loadAudio, playBeep, say } from './audio';
 import { makePeriodicTaskPlanner, timeInSeconds } from './util';
 import { fetchExos } from './exos';
 import { Settings as SettingsIcon } from 'lucide-vue-next'
@@ -33,9 +33,9 @@ async function loadExos() {
 	const code = await fetchExos()
 
 	try {
-		const run = new Function("playBeep", "playSound", "reps", `"use strict";\n${code}`)
+		const run = new Function("playBeep", "say", "reps", `"use strict";\n${code}`)
 		resetUi()
-		exercises.value = run(playBeep, playSound, reps)
+		exercises.value = run(playBeep, say, reps)
 	}
 	catch (e: unknown) {
 		console.error(e)

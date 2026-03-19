@@ -4,7 +4,7 @@ Try it at http://mobile-dev.ch/products/interval-timer
 
 It uses a DSL allowing you to write your own exercise. You need to return an array of `['exercise name', function]`.
 
-The available API functions are `playBeep(frequency)` and `playSound('text')`.
+The available API functions are `playBeep(frequency)` and `say('text')`.
 
 There is also `yield* reps(numberOfSeconds, backgroundColor, label, onTick)`, which can be used to start a section.
 The `onTick` argument is an optional JS function that takes the current remaining time and the total number of seconds
@@ -17,20 +17,20 @@ The following example exposes 2 "exercises", one is a 1-minute break, and the ot
 return [
 	['2 rounds, 10 reps 7+3 secs', function*() {
 		for (let round = 1; round <= 2; round++) {
-			playSound('prepare')
+			say('prepare')
 			yield* reps(10, 'bg-blue-500', `Prepare (Round ${currentRound}/2)`)
 
 			for (let set = 1; set <= 10; set++) {
-				playSound('work')
+				say('work')
 				yield* reps(7, 'bg-red-500', `Work ${set}/10`)
 
-				playSound('rest')
+				say('rest')
 				yield* reps(3, 'bg-green-500', `Rest ${set}/10`)
 			}
 		}
 	}],
 	['1 min break', function*() {
-		playSound('break')
+		say('break')
 		yield* reps('break', 60, 'bg-purple-500', 'Break', remaining => {
 			if (remaining === 1) {
 				playBeep(880)
