@@ -31,7 +31,13 @@ return [
 	},
 	['1 min break', function*() {
 		playSound('break')
-		yield* reps('break', 120, 'bg-purple-600', 'Break', beepLast(5))
+		yield* reps('break', 120, 'bg-purple-600', 'Break', remaining => {
+			if (remaining === 1) {
+				playBeep(880)
+			} else if (remaining <= 5) {
+				playBeep(440)
+			}
+		})
 	}],
 ];
 ```
