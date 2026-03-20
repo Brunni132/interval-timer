@@ -12,7 +12,7 @@ function* sayAndHold(soundName, seconds, bgCol, label, onTick) {
 
 function *oneLeg(totalRounds, workTime, restTime) {
 	for (let currentRound = 1; currentRound <= totalRounds; currentRound += 1) {
-		yield* sayAndHold('work', workTime, 'red-600', `Work (Round ${currentRound}/${totalRounds})`, beepLast(2));
+		yield* sayAndHold('work', workTime, 'red-700', `Work (Round ${currentRound}/${totalRounds})`, beepLast(2));
 
 		if (currentRound < totalRounds) {
 			yield* sayAndHold('rest', restTime, 'green-600', `Rest (Round ${currentRound}/${totalRounds})`);
