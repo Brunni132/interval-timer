@@ -98,7 +98,7 @@ async function startExercise(generator: Generator<any, void, unknown>) {
 
 async function resetUi() {
 	state.value = TimerState.Idle
-	bgColor.value = 'bg-emerald-900'
+	bgColor.value = 'emerald-900'
 	stateLabel.value = 'Interval Timer'
 	timeLeft.value = 0
 	isPaused.value = true
@@ -117,6 +117,7 @@ async function skipStep() {
 }
 
 function *hold(seconds: number, bgCol: string, label: string, onTick?: (timeLeft: number, total: number) => void) {
+	console.log(`TEMP setting colour`, bgCol)
 	bgColor.value = bgCol
 	stateLabel.value = label
 	timeLeft.value = seconds
@@ -157,7 +158,7 @@ onUnmounted(async () => {
 
 <template>
 	<Settings v-if="settingsOpen" @update="loadExos" @close="settingsOpen = false" />
-	<div v-else :class="['min-h-screen flex flex-col items-center justify-center transition-colors duration-500 text-white p-0', bgColor]">
+	<div v-else :class="`min-h-screen flex flex-col items-center justify-center transition-colors duration-500 text-white bg-${bgColor} p-0`">
 		<div class="max-w-md w-full text-center space-y-8">
 			<div class="relative w-full">
 				<h1 class="text-4xl font-bold tracking-tight uppercase opacity-80">
