@@ -12,22 +12,22 @@ function* sayAndHold(soundName, seconds, bgCol, label, onTick) {
 
 function *oneLeg(totalRounds, workTime, restTime) {
 	for (let currentRound = 1; currentRound <= totalRounds; currentRound += 1) {
-		yield* sayAndHold('work', workTime, 'red-500', `Work (Round ${currentRound}/${totalRounds})`, beepLast(2));
+		yield* sayAndHold('work', workTime, 'red-600', `Work (Round ${currentRound}/${totalRounds})`, beepLast(2));
 
 		if (currentRound < totalRounds) {
-			yield* sayAndHold('rest', restTime, 'green-500', `Rest (Round ${currentRound}/${totalRounds})`);
+			yield* sayAndHold('rest', restTime, 'green-600', `Rest (Round ${currentRound}/${totalRounds})`);
 		}
 	}
 }
 
 return [
 	['2 sets, 2 legs, 8 reps, 7+3 secs', function*() {
-		yield* sayAndHold('prepare', 7, 'sky-400', 'Prepare', beepLast(2));
+		yield* sayAndHold('prepare', 7, 'sky-600', 'Prepare', beepLast(2));
 
 		for (let set = 1; set <= 2; set++) {
 			yield* oneLeg(8, 7, 3);
 
-			yield* sayAndHold('second leg', 5, 'sky-400', 'Second leg', beepLast(2));
+			yield* sayAndHold('second leg', 5, 'sky-600', 'Second leg', beepLast(2));
 
 			yield* oneLeg(8, 7, 3);
 
