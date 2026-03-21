@@ -72,7 +72,7 @@ function getVolumeGain() {
 }
 
 export async function loadAudio() {
-  const sounds = ['prepare', 'work', 'rest', 'break', 'finished', 'second leg', 'hold', '5', '4', '3', '2', '1'];
+  const sounds = ['prepare', 'work', 'rest', 'break', 'finished', 'exercise finished', 'finished prepare for the next exercise', 'second leg', 'hold', '5', '4', '3', '2', '1'];
   for (const name of sounds) {
     try {
       const base = new URL('.', window.location.href).pathname

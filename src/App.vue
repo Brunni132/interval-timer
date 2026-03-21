@@ -63,12 +63,21 @@ const isPaused = computed({
 	}
 })
 
-function advanceOneSecond() {
-	const programFinished = iterator.next().done
-	if (programFinished) {
-		resetUi()
+async function advanceOneSecond() {
+	try {
+		const programFinished = iterator.next().done
+		if (programFinished) {
+			say('exercise finished')
+			await resetUi()
+		}
+		return programFinished
 	}
-	return programFinished
+	catch (e: unknown) {
+		await resetUi()
+		console.error(e)
+		alert(`An error occurred while running the program ${e}`)
+		return true
+	}
 }
 
 function timerFunction() {
@@ -92,8 +101,9 @@ async function startExercise(generator: Generator<any, void, unknown>) {
 
 	state.value = TimerState.Running
 	iterator = generator
-	iterator.next()
-	isPaused.value = false
+	if (!await advanceOneSecond()) {
+		isPaused.value = false
+	}
 }
 
 async function resetUi() {
@@ -106,18 +116,17 @@ async function resetUi() {
 
 async function skipStep() {
 	while (timeLeft.value > 1) {
-		if (advanceOneSecond()) return
+		if (await advanceOneSecond()) return
 	}
 
 	// Advance last second
-	if (!advanceOneSecond() && !isPaused.value) {
+	if (!await advanceOneSecond() && !isPaused.value) {
 		nextExpectedTick = timeInSeconds() + 1
 		timer.planEvery(1, timerFunction, false)
 	}
 }
 
 function *hold(seconds: number, bgCol: string, label: string, onTick?: (timeLeft: number, total: number) => void) {
-	console.log(`TEMP setting colour`, bgCol)
 	bgColor.value = bgCol
 	stateLabel.value = label
 	timeLeft.value = seconds

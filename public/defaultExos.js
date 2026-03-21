@@ -1,5 +1,5 @@
 function beepLast(seconds) {
-	return (timeLeft, total) => {
+	return timeLeft => {
 		// if (timeLeft >= 1 && timeLeft <= seconds) beep(440);
 		if (timeLeft >= 1 && timeLeft <= seconds) say(String(timeLeft));
 	};
@@ -20,21 +20,32 @@ function *oneLeg(totalRounds, workTime, restTime) {
 	}
 }
 
+function* routine(text, skipBreak) {
+	yield* sayAndHold('prepare', 7, 'sky-400', `Prepare ${text}`, beepLast(2));
+
+	yield* oneLeg(8, 7, 3);
+
+	yield* sayAndHold('second leg', 5, 'sky-400', 'Second leg', beepLast(2));
+
+	yield* oneLeg(8, 7, 3);
+
+	if (!skipBreak) {
+		yield* sayAndHold('break', 90, 'purple-600', `Break ${text}`, beepLast(3));
+	}
+}
+
 return [
-	['2 sets, 2 legs, 8 reps, 7+3 secs', function*() {
-		yield* sayAndHold('prepare', 7, 'sky-600', 'Prepare', beepLast(2));
-
-		for (let set = 1; set <= 2; set++) {
-			yield* oneLeg(8, 7, 3);
-
-			yield* sayAndHold('second leg', 5, 'sky-600', 'Second leg', beepLast(2));
-
-			yield* oneLeg(8, 7, 3);
-
-			yield* sayAndHold('break', 120, 'purple-600', `Break ${set}/2`, beepLast(5));
+	['∞ sets, 2 legs, 8 reps, 7+3 secs', function*() {
+		for (let set = 1; set <= 100; set++) {
+			yield* routine(`#${set}`);
 		}
 	}],
-	['2 min break', function*() {
-		yield* sayAndHold('break', 120, 'purple-600', 'Break', beepLast(5));
+	['2 sets, 2 legs, 8 reps, 7+3 secs', function*() {
+		for (let set = 1; set <= 2; set++) {
+			yield* routine(`${set}/2`, set === 2);
+		}
+	}],
+	['1 min 30 break', function*() {
+		yield* sayAndHold('break', 90, 'purple-600', 'Break', beepLast(5));
 	}],
 ];
