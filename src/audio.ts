@@ -72,7 +72,7 @@ function getVolumeGain() {
 }
 
 export async function loadAudio() {
-  const sounds = ['prepare', 'work', 'rest', 'break', 'finished', 'exercise finished', 'finished prepare for the next exercise', 'second leg', 'hold', '5', '4', '3', '2', '1'];
+  const sounds = ['prepare', 'work', 'rest', 'break', 'finished', 'exercise finished', 'finished prepare for the next exercise', 'second leg', 'hold', '5', '4', '3', '2', '1', '8 rep', '10 rep', '12 rep'];
   for (const name of sounds) {
     try {
       const base = new URL('.', window.location.href).pathname
@@ -93,13 +93,14 @@ export function say(name: string) {
 		gainNode.gain.value = getVolumeGain()
 		gainNode.connect(audioContext.destination)
 
-    const source = audioContext.createBufferSource();
-    source.buffer = audioBuffers[name];
-    source.connect(gainNode);
+		const source = audioContext.createBufferSource();
+		source.buffer = audioBuffers[name];
+		source.connect(gainNode);
 		source.start();
   } else {
     // Fallback to Web Speech API if Gemini TTS failed or is loading
     const utterance = new SpeechSynthesisUtterance(name);
+	utterance.volume = getVolume();
     window.speechSynthesis.speak(utterance);
   }
 }
