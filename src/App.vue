@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { loadAudio, beep, say } from './audio';
+import { loadAudio, beep, say, setMute } from './audio';
 import { makePeriodicTaskPlanner, timeInSeconds } from './util';
 import { fetchExos } from './exos';
 import { Settings as SettingsIcon } from 'lucide-vue-next'
@@ -22,6 +22,7 @@ const stateLabel = ref('')
 const _isPaused = ref(true)
 
 let nextExpectedTick = 0
+let stepCounter = 0
 
 let exercises = ref<[string, () => Generator<number, void, unknown>][]>([])
 let iterator: Generator<any, void, unknown>
@@ -33,9 +34,9 @@ async function loadExos() {
 	const code = await fetchExos()
 
 	try {
-		const run = new Function("beep", "say", "hold", `"use strict";\n${code}`)
+		const run = new Function("beep", "say", "hold", "step", `"use strict";\n${code}`)
 		resetUi()
-		exercises.value = run(beep, say, hold)
+		exercises.value = run(beep, say, hold, step)
 	}
 	catch (e: unknown) {
 		console.error(e)
@@ -62,6 +63,10 @@ const isPaused = computed({
 		}
 	}
 })
+
+function step() {
+	stepCounter += 1
+}
 
 async function advanceOneSecond() {
 	try {
@@ -115,12 +120,15 @@ async function resetUi() {
 }
 
 async function skipStep() {
-	while (timeLeft.value > 1) {
+	const curCounter = stepCounter
+	// setMute(true)
+	while (curCounter == stepCounter) {
 		if (await advanceOneSecond()) return
 	}
+	// setMute(false)
 
 	// Advance last second
-	if (!await advanceOneSecond() && !isPaused.value) {
+	if (!isPaused.value) {
 		nextExpectedTick = timeInSeconds() + 1
 		timer.planEvery(1, timerFunction, false)
 	}

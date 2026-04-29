@@ -15,7 +15,7 @@ function* oneLeg(totalRounds, workTime, restTime) {
 		yield* sayAndHold('work', workTime, 'red-700', `Work ${currentRound}/${totalRounds}`, beepLast(2));
 
 		if (currentRound < totalRounds) {
-			if ([8, 10, 12].includes(currentRound)) {
+			if ([6, 8, 10, 12].includes(currentRound)) {
 				say(`${currentRound} rep`);
 			}
 			else {
@@ -32,15 +32,20 @@ function* routine(text, options) {
 	}
 
 	yield* sayAndHold('prepare', 7, 'sky-400', `Prepare ${text}`, beepLast(2));
+	step()
 
 	yield* oneLeg(reps, 7, 3);
+	step()
 
 	yield* sayAndHold('second leg', 5, 'sky-400', 'Second leg', beepLast(2));
+	step()
 
 	yield* oneLeg(reps, 7, 3);
+	step()
 
 	if (!skipBreak) {
 		yield* sayAndHold('break', 90, 'purple-600', `Break ${text}`, beepLast(3));
+		step()
 	}
 }
 

@@ -1,6 +1,34 @@
 // Audio setup
 const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 const audioBuffers = {} as Record<string, AudioBuffer>
+const activeSources = new Set()
+export let muteSound = false
+
+export function setMute(mute: boolean) {
+	muteSound = mute
+}
+
+function addSource(source: any) {
+	activeSources.add(source)
+	source.onended = () => {
+		activeSources.delete(source);
+		source.disconnect();
+	};
+}
+
+function stopAllSources() {
+	for (const source of activeSources) {
+		try {
+			(source as any).stop();
+		} catch (err) {
+			// stop() can throw if the source already stopped
+		}
+
+		(source as any).disconnect();
+	}
+
+	activeSources.clear();
+}
 
 // const geminiApiKey = process.env.GEMINI_API_KEY;
 
@@ -67,28 +95,31 @@ export function getVolume() {
 }
 
 function getVolumeGain() {
-  const dB = -40 + getVolume() * 40
-  return Math.pow(10, dB / 20)
+	const dB = -40 + getVolume() * 40
+	return Math.pow(10, dB / 20)
 }
 
 export async function loadAudio() {
-  const sounds = ['prepare', 'work', 'rest', 'break', 'finished', 'exercise finished', 'finished prepare for the next exercise', 'second leg', 'hold', '5', '4', '3', '2', '1', '8 rep', '10 rep', '12 rep'];
-  for (const name of sounds) {
-    try {
-      const base = new URL('.', window.location.href).pathname
-      const response = await fetch(`${base}assets/${name}.mp3`);
-      if (!response.ok) throw new Error(`Failed to load ${base}assets/${name}.mp3`);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      audioBuffers[name] = audioBuffer;
-    } catch (e) {
-      console.warn(`Could not load audio for ${name}, falling back to speech synthesis`, e);
-    }
-  }
+	const sounds = ['prepare', 'work', 'rest', 'break', 'finished', 'exercise finished', 'finished prepare for the next exercise', 'second leg', 'hold', '5', '4', '3', '2', '1', '6 rep', '8 rep', '10 rep', '12 rep'];
+	for (const name of sounds) {
+		try {
+			const base = new URL('.', window.location.href).pathname
+			const response = await fetch(`${base}assets/${name}.mp3`);
+			if (!response.ok) throw new Error(`Failed to load ${base}assets/${name}.mp3`);
+			const arrayBuffer = await response.arrayBuffer();
+			const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+			audioBuffers[name] = audioBuffer;
+		} catch (e) {
+			console.warn(`Could not load audio for ${name}, falling back to speech synthesis`, e);
+		}
+	}
 }
 
 export function say(name: string) {
-  if (audioBuffers[name]) {
+	if (muteSound) return
+	stopAllSources()
+
+	if (audioBuffers[name]) {
 		var gainNode = audioContext.createGain()
 		gainNode.gain.value = getVolumeGain()
 		gainNode.connect(audioContext.destination)
@@ -97,32 +128,37 @@ export function say(name: string) {
 		source.buffer = audioBuffers[name];
 		source.connect(gainNode);
 		source.start();
-  } else {
-    // Fallback to Web Speech API if Gemini TTS failed or is loading
-    const utterance = new SpeechSynthesisUtterance(name);
-	utterance.volume = getVolume();
-    window.speechSynthesis.speak(utterance);
-  }
+		addSource(source);
+	} else {
+		// Fallback to Web Speech API if Gemini TTS failed or is loading
+		const utterance = new SpeechSynthesisUtterance(name);
+		utterance.volume = getVolume();
+		window.speechSynthesis.speak(utterance);
+	}
 }
 
 export function beep(frequency = 440, duration = 0.1) {
-  const vol = getVolumeGain()
-  const osc = audioContext.createOscillator();
-  const gain = audioContext.createGain();
+	if (muteSound) return
+	stopAllSources()
 
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
+	const vol = getVolumeGain()
+	const osc = audioContext.createOscillator();
+	const gain = audioContext.createGain();
 
-  gain.gain.setValueAtTime(vol, audioContext.currentTime);
-  gain.gain.exponentialRampToValueAtTime(vol * 0.2, audioContext.currentTime + duration);
+	osc.type = 'sine';
+	osc.frequency.setValueAtTime(frequency, audioContext.currentTime);
 
-  osc.connect(gain);
-  gain.connect(audioContext.destination);
+	gain.gain.setValueAtTime(vol, audioContext.currentTime);
+	gain.gain.exponentialRampToValueAtTime(vol * 0.2, audioContext.currentTime + duration);
 
-  osc.start();
-  osc.stop(audioContext.currentTime + duration);
+	osc.connect(gain);
+	addSource(osc)
+	gain.connect(audioContext.destination);
+
+	osc.start();
+	osc.stop(audioContext.currentTime + duration);
 }
 
 export function updateVolume(vol: number) {
-  localStorage.setItem('volume', String(vol))
+	localStorage.setItem('volume', String(vol))
 }
