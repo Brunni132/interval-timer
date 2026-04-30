@@ -1,5 +1,5 @@
 export async function fetchExos() {
-	const savedConfig = localStorage.getItem('exos')
+	const savedConfig = localStorage.getItem('exos2')
 	if (savedConfig) return savedConfig
 
 	const base = new URL('.', window.location.href).pathname
@@ -10,5 +10,5 @@ export async function fetchExos() {
 }
 
 export function updateExos(code: string) {
-	localStorage.setItem('exos', code)
+	localStorage.setItem('exos2', code)
 }
