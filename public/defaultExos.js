@@ -60,6 +60,18 @@ return [
 			yield* routine(`#${set}`, { reps: 10 });
 		}
 	}],
+	['30 sec plank', function* () {
+		for (let set = 1; set <= 100; set++) {
+			yield* sayAndHold('prepare', 7, 'sky-400', `Prepare #${set}`, beepLast(2));
+			step();
+
+			yield* sayAndHold('work', 30, 'red-700', `Work #${set}`, beepLast(2));
+			step();
+
+			yield* sayAndHold('rest', 30, 'green-600', `Rest #${set}`);
+			step();
+		}
+	}],
 	['2 sets, 2 legs, 8 reps, 7+3 secs', function* () {
 		for (let set = 1; set <= 2; set++) {
 			yield* routine(`${set}/2`, { skipBreak: set === 2 });
