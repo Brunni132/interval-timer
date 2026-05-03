@@ -15,7 +15,7 @@ function* oneLeg(totalRounds, workTime, restTime) {
 		yield* sayAndHold('work', workTime, 'red-700', `Work ${currentRound}/${totalRounds}`, beepLast(2));
 
 		if (currentRound < totalRounds) {
-			if ([6, 8, 10, 12].includes(currentRound)) {
+			if ([6, 8, 10, 12, 14, 16, 18, 20].includes(currentRound)) {
 				say(`${currentRound} rep`);
 			}
 			else {
@@ -27,8 +27,8 @@ function* oneLeg(totalRounds, workTime, restTime) {
 }
 
 function* routine(text, options) {
-	const { skipBreak, reps } = {
-		skipBreak: false, reps: 8, ...options
+	const { skipBreak, reps, secondLeg } = {
+		skipBreak: false, reps: 8, secondLeg: true, ...options
 	}
 
 	yield* sayAndHold('prepare', 7, 'sky-400', `Prepare ${text}`, beepLast(2));
@@ -37,11 +37,13 @@ function* routine(text, options) {
 	yield* oneLeg(reps, 7, 3);
 	step()
 
-	yield* sayAndHold('second leg', 5, 'sky-400', 'Second leg', beepLast(2));
-	step()
+	if (secondLeg) {
+		yield* sayAndHold('second leg', 5, 'sky-400', 'Second leg', beepLast(2));
+		step()
 
-	yield* oneLeg(reps, 7, 3);
-	step()
+		yield* oneLeg(reps, 7, 3);
+		step()
+	}
 
 	if (!skipBreak) {
 		yield* sayAndHold('break', 90, 'purple-600', `Break ${text}`, beepLast(3));
@@ -58,6 +60,16 @@ return [
 	['∞ sets, 2 legs, 10 reps, 7+3 secs', function* () {
 		for (let set = 1; set <= 100; set++) {
 			yield* routine(`#${set}`, { reps: 10 });
+		}
+	}],
+	['∞ sets, 2x8 reps, 7+3 secs', function* () {
+		for (let set = 1; set <= 100; set++) {
+			yield* routine(`#${set}`, { reps: 16, secondLeg: false });
+		}
+	}],
+	['∞ sets, 2x10 reps, 7+3 secs', function* () {
+		for (let set = 1; set <= 100; set++) {
+			yield* routine(`#${set}`, { reps: 20, secondLeg: false });
 		}
 	}],
 	['30 sec plank', function* () {

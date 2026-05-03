@@ -175,8 +175,8 @@ onUnmounted(async () => {
 
 <template>
 	<Settings v-if="settingsOpen" @update="loadExos" @close="settingsOpen = false" />
-	<div v-else :class="`min-h-screen flex flex-col items-center justify-center transition-colors duration-500 text-white bg-${bgColor} p-0`">
-		<div class="max-w-md w-full text-center space-y-8">
+	<div v-else :class="`min-h-screen flex flex-col items-center justify-center transition-colors duration-500 text-white bg-${bgColor} p-8`">
+		<div class="max-w-md w-full text-center space-y-8 shrink-0">
 			<div class="relative w-full">
 				<h1 class="text-4xl font-bold tracking-tight uppercase opacity-80">
 					{{ stateLabel }}
@@ -249,6 +249,5 @@ onUnmounted(async () => {
 <style>
 body {
 	margin: 0;
-	overflow: hidden;
 }
 </style>
