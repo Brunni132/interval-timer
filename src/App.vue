@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { Pause, Play, Settings as SettingsIcon, FastForward, Square } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { loadAudio, beep, say, setMute } from './audio';
-import { makePeriodicTaskPlanner, timeInSeconds } from './util';
+import { beep, loadAudio, say } from './audio';
 import { fetchExos } from './exos';
-import { Settings as SettingsIcon } from 'lucide-vue-next'
+import { makePeriodicTaskPlanner, timeInSeconds } from './util';
 import Settings from './views/Settings.vue';
 import { acquireWakeLock, releaseWakeLock } from './wakelock';
 
@@ -229,23 +229,30 @@ onUnmounted(async () => {
 			<div v-else class="pt-8 flex justify-center gap-4">
 				<button
 					@click="isPaused = !isPaused"
-					class="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 active:scale-95 transition-transform shadow-xl uppercase tracking-widest"
+					class="flex h-16 w-16 items-center justify-center rounded-full bg-white text-black hover:scale-105 active:scale-95 transition-transform shadow-xl"
+					:title="isPaused ? 'Resume' : 'Pause'"
+					:aria-label="isPaused ? 'Resume timer' : 'Pause timer'"
 				>
-					{{ isPaused ? 'Resume' : 'Pause' }}
+					<Play v-if="isPaused" class="h-7 w-7 fill-current" aria-hidden="true" />
+					<Pause v-else class="h-7 w-7 fill-current" aria-hidden="true" />
 				</button>
 
 				<button
 					@click="skipStep()"
-					class="px-8 py-4 border-2 border-white/30 text-white font-bold rounded-full hover:bg-white/10 transition-colors uppercase tracking-widest"
+					class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/30 text-white hover:bg-white/10 active:scale-95 transition"
+					title="Skip"
+					aria-label="Skip step"
 				>
-					Skip
+					<FastForward class="h-7 w-7 fill-current" aria-hidden="true" />
 				</button>
 
 				<button
 					@click="resetUi()"
-					class="px-8 py-4 border-2 border-white/30 text-white font-bold rounded-full hover:bg-white/10 transition-colors uppercase tracking-widest"
+					class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/30 text-white hover:bg-white/10 active:scale-95 transition"
+					title="Stop"
+					aria-label="Stop timer"
 				>
-					Stop
+					<Square class="h-7 w-7 fill-current" aria-hidden="true" />
 				</button>
 			</div>
 
