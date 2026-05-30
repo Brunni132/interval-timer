@@ -151,12 +151,24 @@ function *hold(seconds: number, bgCol: string, label: string, onTick?: (timeLeft
 function onKeyDown(e: KeyboardEvent) {
 	if (settingsOpen.value) return
 
-	if (e.code === 'Space') {
+	if (e.code === 'Space' || e.code == 'KeyP') {
 		e.preventDefault()
 
 		if (state.value !== TimerState.Idle && state.value !== TimerState.Finished) {
 			isPaused.value = !isPaused.value
 		}
+	}
+	else if (e.code === 'KeyN') {
+		e.preventDefault()
+
+		if (state.value !== TimerState.Idle && state.value !== TimerState.Finished) {
+			skipStep()
+		}
+	}
+	else if (e.code === 'KeyS') {
+		e.preventDefault()
+
+		resetUi()
 	}
 }
 
