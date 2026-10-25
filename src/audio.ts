@@ -137,6 +137,51 @@ export function say(name: string) {
 	}
 }
 
+let accentSound: AudioBuffer | null = null;
+let commonSound: AudioBuffer | null = null;
+
+function createMetronomeSound(frequency: number, volume: number) {
+	const sampleRate = audioContext.sampleRate;
+	const length = sampleRate * 0.1;
+	const buffer = audioContext.createBuffer(1, length, sampleRate);
+	const samples = buffer.getChannelData(0);
+	const phase = 2 * Math.PI / sampleRate * frequency;
+
+	for (let i = 0; i < length; i++) {
+		samples[i] = volume * (
+		0.09 * Math.exp(-i * (100 / sampleRate)) * Math.sin(phase * i) +
+		0.34 * Math.exp(-i * (200 / sampleRate)) * Math.sin(2 * phase * i) +
+		0.57 * Math.exp(-i * (500 / sampleRate)) * Math.sin(6 * phase * i)
+		);
+	}
+	return buffer;
+}
+
+
+export function playMetronome(accent = false) {
+	if (muteSound) return
+	stopAllSources()
+
+	if (!accentSound || !commonSound) {
+		accentSound = createMetronomeSound(880, 0.9)
+		commonSound = createMetronomeSound(440, 0.7)
+	}
+
+	const gainNode = audioContext.createGain()
+	gainNode.gain.value = getVolumeGain()
+	gainNode.connect(audioContext.destination)
+
+	const source = audioContext.createBufferSource()
+	source.buffer = accent ? accentSound : commonSound
+	source.connect(gainNode)
+	addSource(source)
+	source.addEventListener('ended', () => gainNode.disconnect(), { once: true })
+
+	const time = audioContext.currentTime
+	source.start(time)
+	source.stop(time + 0.05)
+}
+
 export function beep(frequency = 440, duration = 0.1) {
 	if (muteSound) return
 	stopAllSources()

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Pause, Play, Settings as SettingsIcon, FastForward, Square } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { beep, loadAudio, say } from './audio';
+import { beep, loadAudio, playMetronome, say } from './audio';
 import { fetchExos } from './exos';
 import { makePeriodicTaskPlanner, timeInSeconds } from './util';
 import Settings from './views/Settings.vue';
@@ -17,12 +17,14 @@ const enum TimerState {
 
 const state = ref<TimerState>(TimerState.Idle)
 const timeLeft = ref(0)
+const additionalInfo = ref([''])
 const bgColor = ref('')
 const stateLabel = ref('')
 const _isPaused = ref(true)
 
 let nextExpectedTick = 0
 let stepCounter = 0
+let isSkipping = false
 
 let exercises = ref<[string, () => Generator<number, void, unknown>][]>([])
 let iterator: Generator<any, void, unknown>
@@ -34,9 +36,9 @@ async function loadExos() {
 	const code = await fetchExos()
 
 	try {
-		const run = new Function("beep", "say", "hold", "step", `"use strict";\n${code}`)
+		const run = new Function("beep", "say", "hold", "step", "tick", "skipping", "setLine", `"use strict";\n${code}`)
 		resetUi()
-		exercises.value = run(beep, say, hold, step)
+		exercises.value = run(beep, say, hold, step, playMetronome, skipping, setLine)
 	}
 	catch (e: unknown) {
 		console.error(e)
@@ -85,11 +87,11 @@ async function advanceOneSecond() {
 	}
 }
 
-function timerFunction() {
+async function timerFunction() {
 	// Late?
 	while (timeInSeconds() - nextExpectedTick > 1) {
 		nextExpectedTick += 1
-		if (advanceOneSecond()) return
+		if (await advanceOneSecond()) return
 	}
 
 	// Early?
@@ -98,12 +100,13 @@ function timerFunction() {
 	}
 
 	nextExpectedTick += 1
-	advanceOneSecond()
+	await advanceOneSecond()
 }
 
 async function startExercise(generator: Generator<any, void, unknown>) {
 	await resetUi()
 
+	additionalInfo.value = ['seconds remaining']
 	state.value = TimerState.Running
 	iterator = generator
 	if (!await advanceOneSecond()) {
@@ -121,16 +124,21 @@ async function resetUi() {
 
 async function skipStep() {
 	const curCounter = stepCounter
+	isSkipping = true
 	// setMute(true)
 	while (curCounter == stepCounter) {
-		if (await advanceOneSecond()) return
+		if (await advanceOneSecond()) {
+			isSkipping = false
+			return
+		}
 	}
+	isSkipping = false
 	// setMute(false)
 
 	// Advance last second
 	if (!isPaused.value) {
 		nextExpectedTick = timeInSeconds() + 1
-		timer.planEvery(1, timerFunction, false)
+		timer.planAsyncEvery(1, timerFunction, false)
 	}
 }
 
@@ -146,6 +154,17 @@ function *hold(seconds: number, bgCol: string, label: string, onTick?: (timeLeft
 
 		timeLeft.value -= 1
 	}
+}
+
+function skipping() {
+	return isSkipping
+}
+
+function setLine(lineNo: number, text: string) {
+	while (lineNo >= additionalInfo.value.length) {
+		additionalInfo.value.push('')
+	}
+	additionalInfo.value[lineNo] = text
 }
 
 function onKeyDown(e: KeyboardEvent) {
@@ -206,8 +225,8 @@ onUnmounted(async () => {
 				<div class="text-[12rem] font-black leading-none tabular-nums drop-shadow-2xl">
 					{{ timeLeft }}
 				</div>
-				<div class="text-xl font-medium opacity-60">
-					seconds remaining
+				<div v-for="line in additionalInfo" class="text-xl font-medium opacity-60">
+					{{ line }}
 				</div>
 			</div>
 

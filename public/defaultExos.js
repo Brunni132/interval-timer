@@ -51,7 +51,37 @@ function* routine(text, options) {
 	}
 }
 
+function printSets(elapsed, repTime) {
+	// Add a 5 second pause between reps
+	return `${repTime} sec sets: ~${(elapsed / (repTime + 5)).toFixed(1)}`
+}
+
+function tickMetronome(timeLeft, total) {
+	if (skipping()) return
+
+	const elapsed = total - timeLeft;
+	setLine(0, printSets(elapsed, 15));
+	setLine(1, printSets(elapsed, 20));
+	setLine(2, printSets(elapsed, 30));
+
+	if (timeLeft == total) return;
+	else if (timeLeft % 10 == 0) {
+		tick(true);
+	}
+	else {
+		tick(false);
+	}
+}
+
 return [
+	['Ticks & 1-minute breaks', function* () {
+		while (true) {
+			yield* sayAndHold('work', 999, 'amber-400', 'Work', tickMetronome);
+			step();
+			yield* sayAndHold('break', 60, 'purple-600', 'Break', beepLast(5));
+			step();
+		}
+	}],
 	['∞ sets, 2 legs, 8 reps, 7+3 secs', function* () {
 		for (let set = 1; set <= 100; set++) {
 			yield* routine(`#${set}`);
