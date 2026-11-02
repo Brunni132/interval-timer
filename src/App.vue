@@ -16,12 +16,13 @@ const enum TimerState {
 }
 
 const state = ref<TimerState>(TimerState.Idle)
-const timeLeft = ref(0)
+const timeLeftLabel = ref('')
 const additionalInfo = ref([''])
 const bgColor = ref('')
 const stateLabel = ref('')
 const _isPaused = ref(true)
 
+let timeLeft = 0
 let nextExpectedTick = 0
 let stepCounter = 0
 let isSkipping = false
@@ -118,7 +119,8 @@ async function resetUi() {
 	state.value = TimerState.Idle
 	bgColor.value = 'emerald-900'
 	stateLabel.value = 'Interval Timer'
-	timeLeft.value = 0
+	timeLeft = 0
+	timeLeftLabel.value = '0'
 	isPaused.value = true
 }
 
@@ -143,16 +145,18 @@ async function skipStep() {
 }
 
 function *hold(seconds: number, bgCol: string, label: string, onTick?: (timeLeft: number, total: number) => void) {
+	let left = seconds
 	bgColor.value = bgCol
 	stateLabel.value = label
-	timeLeft.value = seconds
+	timeLeftLabel.value = String(left)
 
-	while (timeLeft.value > 0) {
-		if (onTick) onTick(timeLeft.value, seconds)
+	while (left > 0) {
+		if (onTick) onTick(left, seconds)
 
 		yield
 
-		timeLeft.value -= 1
+		left -= 1
+		timeLeftLabel.value = String(left)
 	}
 }
 
@@ -161,6 +165,10 @@ function skipping() {
 }
 
 function setLine(lineNo: number, text: string) {
+	if (lineNo === -1) {
+		timeLeftLabel.value = text
+		return
+	}
 	while (lineNo >= additionalInfo.value.length) {
 		additionalInfo.value.push('')
 	}
@@ -223,7 +231,7 @@ onUnmounted(async () => {
 
 			<div class="relative" v-if="state !== TimerState.Idle && state !== TimerState.Finished">
 				<div class="text-[12rem] font-black leading-none tabular-nums drop-shadow-2xl">
-					{{ timeLeft }}
+					{{ timeLeftLabel }}
 				</div>
 				<div v-for="line in additionalInfo" class="text-xl font-medium opacity-60">
 					{{ line }}

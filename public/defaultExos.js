@@ -1,4 +1,4 @@
-function beepLast(seconds) {
+function announceLast(seconds) {
 	return (timeLeft, total) => {
 		// if (timeLeft >= 1 && timeLeft <= seconds) beep(440);
 		if (timeLeft >= 1 && timeLeft <= seconds) say(String(timeLeft));
@@ -12,7 +12,7 @@ function* sayAndHold(soundName, seconds, bgCol, label, onTick) {
 
 function* oneLeg(totalRounds, workTime, restTime) {
 	for (let currentRound = 1; currentRound <= totalRounds; currentRound += 1) {
-		yield* sayAndHold('work', workTime, 'red-700', `Work ${currentRound}/${totalRounds}`, beepLast(2));
+		yield* sayAndHold('work', workTime, 'red-700', `Work ${currentRound}/${totalRounds}`, announceLast(2));
 
 		if (currentRound < totalRounds) {
 			if ([6, 8, 10, 12, 14, 16, 18, 20].includes(currentRound)) {
@@ -31,14 +31,14 @@ function* routine(text, options) {
 		skipBreak: false, reps: 8, secondLeg: true, ...options
 	}
 
-	yield* sayAndHold('prepare', 7, 'sky-400', `Prepare ${text}`, beepLast(2));
+	yield* sayAndHold('prepare', 7, 'sky-400', `Prepare ${text}`, announceLast(2));
 	step()
 
 	yield* oneLeg(reps, 7, 3);
 	step()
 
 	if (secondLeg) {
-		yield* sayAndHold('second leg', 5, 'sky-400', 'Second leg', beepLast(2));
+		yield* sayAndHold('second leg', 5, 'sky-400', 'Second leg', announceLast(2));
 		step()
 
 		yield* oneLeg(reps, 7, 3);
@@ -46,20 +46,25 @@ function* routine(text, options) {
 	}
 
 	if (!skipBreak) {
-		yield* sayAndHold('break', 90, 'purple-600', `Break ${text}`, beepLast(3));
+		yield* sayAndHold('break', 90, 'purple-600', `Break ${text}`, announceLast(3));
 		step()
 	}
 }
 
 function printSets(elapsed, repTime) {
 	// Add a 5 second pause between reps
-	return `${repTime} sec sets: ~${(elapsed / (repTime + 5)).toFixed(1)}`
+	const cycle = repTime + 5;
+	const series =
+		Math.floor(elapsed / cycle) +
+		Math.min((elapsed % cycle) / repTime, 1);
+	return `${repTime} sec sets: ~${series.toFixed(1)}`
 }
 
-function tickMetronome(timeLeft, total) {
+function metronomeTick10(timeLeft, total) {
 	if (skipping()) return
 
 	const elapsed = total - timeLeft;
+	setLine(-1, total - timeLeft)
 	setLine(0, printSets(elapsed, 15));
 	setLine(1, printSets(elapsed, 20));
 	setLine(2, printSets(elapsed, 30));
@@ -73,12 +78,17 @@ function tickMetronome(timeLeft, total) {
 	}
 }
 
+function metronomeTick(timeLeft, total) {
+	if (!skipping()) tick(false);
+}
+
 return [
 	['Ticks & 1-minute breaks', function* () {
 		while (true) {
-			yield* sayAndHold('work', 999, 'amber-400', 'Work', tickMetronome);
+			yield* sayAndHold('prepare', 7, 'sky-400', `Prepare`, metronomeTick);
+			yield* sayAndHold('work', 999, 'amber-400', 'Work', metronomeTick10);
 			step();
-			yield* sayAndHold('break', 60, 'purple-600', 'Break', beepLast(5));
+			yield* sayAndHold('break', 60, 'purple-600', 'Break', announceLast(5));
 			step();
 		}
 	}],
@@ -104,10 +114,10 @@ return [
 	}],
 	['30 sec plank', function* () {
 		for (let set = 1; set <= 100; set++) {
-			yield* sayAndHold('prepare', 7, 'sky-400', `Prepare #${set}`, beepLast(2));
+			yield* sayAndHold('prepare', 7, 'sky-400', `Prepare #${set}`, announceLast(2));
 			step();
 
-			yield* sayAndHold('work', 30, 'red-700', `Work #${set}`, beepLast(2));
+			yield* sayAndHold('work', 30, 'red-700', `Work #${set}`, announceLast(2));
 			step();
 
 			yield* sayAndHold('rest', 30, 'green-600', `Rest #${set}`);
@@ -120,6 +130,6 @@ return [
 		}
 	}],
 	['1 min 30 break', function* () {
-		yield* sayAndHold('break', 90, 'purple-600', 'Break', beepLast(5));
+		yield* sayAndHold('break', 90, 'purple-600', 'Break', announceLast(5));
 	}],
 ];
