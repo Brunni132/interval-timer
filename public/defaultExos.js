@@ -70,7 +70,7 @@ function metronomeTick10(timeLeft, total) {
 	setLine(2, printSets(elapsed, 30));
 
 	if (timeLeft == total) return;
-	else if (timeLeft % 10 == 0) {
+	else if (timeLeft % 10 == 9) {
 		tick(true);
 	}
 	else {
