@@ -69,8 +69,7 @@ function metronomeTick10(timeLeft, total) {
 	setLine(1, printSets(elapsed, 20));
 	setLine(2, printSets(elapsed, 30));
 
-	if (timeLeft == total) return;
-	else if (timeLeft % 10 == 9) {
+	if (timeLeft % 5 == 4) {
 		tick(true);
 	}
 	else {
@@ -85,14 +84,15 @@ function metronomeTick(timeLeft, total) {
 return [
 	['Ticks & 1-minute breaks', function* () {
 		while (true) {
-			yield* sayAndHold('prepare', 7, 'sky-400', `Prepare`, metronomeTick);
-			yield* sayAndHold('work', 999, 'amber-400', 'Work', metronomeTick10);
+			yield* sayAndHold('prepare', 7, 'sky-400', `Prepare` /*, metronomeTick*/);
+			step();
+			yield* hold(999, 'amber-400', 'Work', metronomeTick10);
 			step();
 			yield* sayAndHold('break', 60, 'purple-600', 'Break', announceLast(5));
 			step();
 		}
 	}],
-	['∞ sets, 2 legs, 8 reps, 7+3 secs', function* () {
+/*	['∞ sets, 2 legs, 8 reps, 7+3 secs', function* () {
 		for (let set = 1; set <= 100; set++) {
 			yield* routine(`#${set}`);
 		}
@@ -112,6 +112,11 @@ return [
 			yield* routine(`#${set}`, { reps: 20, secondLeg: false });
 		}
 	}],
+	['2 sets, 2 legs, 8 reps, 7+3 secs', function* () {
+		for (let set = 1; set <= 2; set++) {
+			yield* routine(`${set}/2`, { skipBreak: set === 2 });
+		}
+	}],*/
 	['30 sec plank', function* () {
 		for (let set = 1; set <= 100; set++) {
 			yield* sayAndHold('prepare', 7, 'sky-400', `Prepare #${set}`, announceLast(2));
@@ -124,9 +129,16 @@ return [
 			step();
 		}
 	}],
-	['2 sets, 2 legs, 8 reps, 7+3 secs', function* () {
-		for (let set = 1; set <= 2; set++) {
-			yield* routine(`${set}/2`, { skipBreak: set === 2 });
+	['60 sec plank', function* () {
+		for (let set = 1; set <= 100; set++) {
+			yield* sayAndHold('prepare', 7, 'sky-400', `Prepare #${set}`, announceLast(2));
+			step();
+
+			yield* sayAndHold('work', 60, 'red-700', `Work #${set}`, announceLast(2));
+			step();
+
+			yield* sayAndHold('rest', 60, 'green-600', `Rest #${set}`);
+			step();
 		}
 	}],
 	['1 min 30 break', function* () {

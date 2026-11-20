@@ -69,6 +69,7 @@ const isPaused = computed({
 
 function step() {
 	stepCounter += 1
+	isSkipping = false
 }
 
 async function advanceOneSecond() {
@@ -125,16 +126,14 @@ async function resetUi() {
 }
 
 async function skipStep() {
-	const curCounter = stepCounter
 	isSkipping = true
 	// setMute(true)
-	while (curCounter == stepCounter) {
+	while (isSkipping) {
 		if (await advanceOneSecond()) {
 			isSkipping = false
 			return
 		}
 	}
-	isSkipping = false
 	// setMute(false)
 
 	// Advance last second
